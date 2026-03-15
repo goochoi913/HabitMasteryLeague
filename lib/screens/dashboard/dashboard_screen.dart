@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:habit_mastery_league/db/database_helper.dart';
-import 'package:habit_mastery_league/models/habit.dart';
-import 'package:habit_mastery_league/models/completion.dart';
-import 'package:habit_mastery_league/utils/prefs_helper.dart';
-import 'package:habit_mastery_league/widgets/habit_card.dart';
-import 'package:habit_mastery_league/widgets/loading_state.dart';
+import '../../db/database_helper.dart';
+import '../../models/habit.dart';
+import '../../models/completion.dart';
+import '../../widgets/habit_card.dart';
+import '../../widgets/loading_state.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

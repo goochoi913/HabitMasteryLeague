@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:habit_mastery_league/models/habit.dart';
-import 'package:habit_mastery_league/utils/app_colors.dart';
+import '../models/habit.dart';
+import '../utils/app_colors.dart';
 
 class HabitCard extends StatelessWidget {
   final Habit habit;
@@ -32,7 +32,6 @@ class HabitCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           child: Row(
             children: [
-              // category color dot 
               Container(
                 width: 12,
                 height: 12,
@@ -42,13 +41,10 @@ class HabitCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Habit name + badge + streak
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Habit name (strikethrough when completed)
                     Text(
                       habit.name,
                       style: Theme.of(context)
@@ -68,10 +64,8 @@ class HabitCard extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 4),
-
                     Row(
                       children: [
-                        // Category badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
@@ -88,8 +82,6 @@ class HabitCard extends StatelessWidget {
                             ),
                           ),
                         ),
-
-                        // Streak badge
                         if (streakCount > 0) ...[
                           const SizedBox(width: 8),
                           Row(
@@ -115,8 +107,6 @@ class HabitCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Complete checkbox (animation)
               GestureDetector(
                 onTap: onToggle,
                 child: AnimatedContainer(
