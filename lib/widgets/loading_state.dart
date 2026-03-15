@@ -13,15 +13,14 @@ class LoadingState extends StatelessWidget {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text(message,
-                style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.5))),
+            Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.5),
+              ),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
+     
