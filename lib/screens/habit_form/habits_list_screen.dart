@@ -5,7 +5,7 @@ import '../../models/habit.dart';
 import '../../models/completion.dart';
 import '../../widgets/habit_card.dart';
 import '../../widgets/loading_state.dart';
-import '../habit_form/habit_form_screen.dart';
+import 'add_edit_habit_screen.dart';
 import '../habit_detail/habit_detail_screen.dart';
 
 class HabitsListScreen extends StatefulWidget {
@@ -189,8 +189,7 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
                                     await Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => HabitDetailScreen(
-                                            habitId: habit.id),
+                                        builder: (_) => AddEditHabitScreen(habit: habit),
                                       ),
                                     );
                                     _loadData();
@@ -206,10 +205,11 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'habits_fab',
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const HabitFormScreen()),
+            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
           );
           _loadData();
         },

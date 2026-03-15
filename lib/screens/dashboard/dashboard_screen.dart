@@ -5,7 +5,7 @@ import '../../models/habit.dart';
 import '../../models/completion.dart';
 import '../../widgets/habit_card.dart';
 import '../../widgets/loading_state.dart';
-import '../habit_form/habit_form_screen.dart';
+import '../habit_form/add_edit_habit_screen.dart';
 import '../habit_detail/habit_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -275,10 +275,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'dashboard_fab',
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const HabitFormScreen()),
+            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
           );
           _loadData();
         },
