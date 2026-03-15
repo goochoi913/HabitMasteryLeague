@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'utils/app_colors.dart';
 import 'utils/prefs_helper.dart';
+import 'screens/main_navigation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,14 +51,7 @@ class HabitMasteryApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Phase 1 Complete — Goo done!',
-            style: TextStyle(fontSize: 20),
-          ),
-        ),
-      ),
+      home: const MainNavigation()
     );
   }
 }
