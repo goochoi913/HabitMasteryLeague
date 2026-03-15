@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/habit.dart';
-import '../utils/app_colors.dart';
+import 'package:habit_mastery_league/models/habit.dart';
+import 'package:habit_mastery_league/utils/app_colors.dart';
 
 class HabitCard extends StatelessWidget {
   final Habit habit;

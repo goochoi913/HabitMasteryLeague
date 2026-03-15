@@ -51,7 +51,7 @@ class HabitMasteryApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainNavigation()
+      home: const MainNavigation(), // ← 이것만 바뀐 부분
     );
   }
 }
