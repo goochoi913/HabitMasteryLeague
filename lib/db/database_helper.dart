@@ -25,6 +25,9 @@ class DatabaseHelper {
     return await openDatabase(
       path,
       version: 1,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: _onCreate,
     );
   }
@@ -80,7 +83,12 @@ class DatabaseHelper {
 
   Future<void> updateHabit(Habit habit) async {
     final db = await database;
-    await db.update('habits', habit.toMap(), where: 'id = ?', whereArgs: [habit.id]);
+    await db.update(
+      'habits',
+      habit.toMap(),
+      where: 'id = ?',
+      whereArgs: [habit.id],
+    );
   }
 
   Future<void> deleteHabit(String id) async {
@@ -122,10 +130,12 @@ class DatabaseHelper {
   }
 
   Future<List<String>> getCompletedDatesInMonth(
-      String habitId, int year, int month) async {
+    String habitId,
+    int year,
+    int month,
+  ) async {
     final db = await database;
-    final prefix =
-        '${year.toString()}-${month.toString().padLeft(2, '0')}';
+    final prefix = '${year.toString()}-${month.toString().padLeft(2, '0')}';
     final maps = await db.query(
       'completions',
       columns: ['completed_date'],
@@ -156,5 +166,29 @@ class DatabaseHelper {
     final db = await database;
     await db.delete('completions');
     await db.delete('habits');
+  }
+
+  Future<void> deleteTodayCompletion(String habitId) async {
+    final db = await database;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    await db.delete(
+      'completions',
+      where: 'habit_id = ? AND completed_date = ?',
+      whereArgs: [habitId, today],
+    );
+  }
+
+  Future<void> deleteCompletionByDate(
+    String habitId,
+    String completedDate,
+  ) async {
+    final db = await database;
+
+    await db.delete(
+      'completions',
+      where: 'habit_id = ? AND completed_date = ?',
+      whereArgs: [habitId, completedDate],
+    );
   }
 }

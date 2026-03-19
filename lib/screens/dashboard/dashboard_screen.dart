@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../db/database_helper.dart';
-import '../../models/habit.dart';
-import '../../models/completion.dart';
-import '../../widgets/habit_card.dart';
-import '../../widgets/loading_state.dart';
-import '../habit_form/add_edit_habit_screen.dart';
-import '../habit_detail/habit_detail_screen.dart';
+import 'package:habit_mastery_league/db/database_helper.dart';
+import 'package:habit_mastery_league/models/completion.dart';
+import 'package:habit_mastery_league/models/habit.dart';
+import 'package:habit_mastery_league/utils/prefs_helper.dart';
+import 'package:habit_mastery_league/utils/streak_utils.dart';
+import 'package:habit_mastery_league/widgets/habit_card.dart';
+import 'package:habit_mastery_league/widgets/loading_state.dart';
+import 'package:habit_mastery_league/screens/habit_form/add_edit_habit_screen.dart';
+import 'package:habit_mastery_league/screens/habit_detail/habit_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,7 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Habit> _habits = [];
   Map<String, bool> _completedToday = {};
   Map<String, int> _streaks = {};
-  bool _isLoading = true;
+  bool _loading = true;
 
   @override
   void initState() {
@@ -30,260 +32,217 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    setState(() => _loading = true);
+
     final habits = await _db.getAllHabits();
-    final completed = <String, bool>{};
-    final streaks = <String, int>{};
+    final completedMap = <String, bool>{};
+    final streakMap = <String, int>{};
 
     for (final habit in habits) {
-      completed[habit.id] = await _db.isCompletedToday(habit.id);
-      streaks[habit.id] = await _calculateStreak(habit.id);
+      completedMap[habit.id] = await _db.isCompletedToday(habit.id);
+      final completions = await _db.getCompletionsForHabit(habit.id);
+      streakMap[habit.id] = calculateCurrentStreak(completions);
     }
 
-    if (mounted) {
-      setState(() {
-        _habits = habits;
-        _completedToday = completed;
-        _streaks = streaks;
-        _isLoading = false;
-      });
-    }
-  }
+    if (!mounted) return;
 
-  Future<int> _calculateStreak(String habitId) async {
-    final completions = await _db.getCompletionsForHabit(habitId);
-    if (completions.isEmpty) return 0;
-
-    final dates = completions.map((c) => c.completedDate).toSet();
-    int streak = 0;
-    DateTime check = DateTime.now();
-
-    while (true) {
-      final dateStr = DateFormat('yyyy-MM-dd').format(check);
-      if (dates.contains(dateStr)) {
-        streak++;
-        check = check.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    return streak;
+    setState(() {
+      _habits = habits;
+      _completedToday = completedMap;
+      _streaks = streakMap;
+      _loading = false;
+    });
   }
 
   Future<void> _toggleCompletion(Habit habit) async {
-    final alreadyDone = _completedToday[habit.id] ?? false;
-    if (!alreadyDone) {
-      await _db.insertCompletion(Completion(habitId: habit.id));
-    }
+    if (_completedToday[habit.id] == true) return;
+
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final completion = Completion(habitId: habit.id, completedDate: today);
+
+    await _db.insertCompletion(completion);
     await _loadData();
   }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    final name = PrefsHelper.getUsername();
+
+    if (hour < 12) return 'Good Morning, $name! ☀️';
+    if (hour < 18) return 'Good Afternoon, $name! 👋';
+    return 'Good Evening, $name! 🌙';
   }
 
-  String _getTodayLabel() {
-    return DateFormat('EEEE, MMM d').format(DateTime.now());
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.self_improvement,
+            size: 80,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No habits yet!',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap + to create your first habit mission.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: SafeArea(child: LoadingState(message: 'Loading your habits...')),
+      );
+    }
+
     final completedCount = _completedToday.values.where((v) => v).length;
-    final totalCount = _habits.length;
-    final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
+    final total = _habits.length;
+    final progress = total == 0 ? 0.0 : completedCount / total;
 
     return Scaffold(
-      body: SafeArea(
-        child: _isLoading
-            ? const LoadingState(message: 'Loading your habits...')
-            : RefreshIndicator(
-                onRefresh: _loadData,
-                child: CustomScrollView(
-                  slivers: [
-                    // ── Header ──
-                    SliverToBoxAdapter(
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              floating: true,
+              title: const Text(
+                'Habit Mastery League',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _loadData,
+                ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  _getTodayLabel(),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.5),
-                                      ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${_getGreeting()} 👋',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
+                                  "Today's Progress",
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
+                                Text(
+                                  '$completedCount / $total',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                ),
                               ],
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 10,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${(progress * 100).toStringAsFixed(0)}% complete',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.6),
+                                  ),
                             ),
                           ],
                         ),
                       ),
                     ),
-
-                    // ── Progress Card ──
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      "Today's Progress",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w600),
-                                    ),
-                                    Text(
-                                      '$completedCount / $totalCount',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    minHeight: 10,
-                                    backgroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceVariant,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      progress == 1.0
-                                          ? Colors.green
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                    ),
-                                  ),
-                                ),
-                                if (totalCount > 0 && completedCount == totalCount)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 10),
-                                    child: Text(
-                                      '🎉 All done for today!',
-                                      style: TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // ── Habit List ──
-                    if (_habits.isEmpty)
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_task,
-                                  size: 64,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.3)),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No habits yet.\nTap + to create your first one!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.5),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final habit = _habits[index];
-                            return HabitCard(
-                              habit: habit,
-                              isCompletedToday:
-                                  _completedToday[habit.id] ?? false,
-                              streakCount: _streaks[habit.id] ?? 0,
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        HabitDetailScreen(habitId: habit.id),
-                                  ),
-                                );
-                                _loadData();
-                              },
-                              onToggle: () => _toggleCompletion(habit),
-                            );
-                          },
-                          childCount: _habits.length,
-                        ),
-                      ),
-
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: 80)), // FAB clearance
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
+            ),
+            _habits.isEmpty
+                ? SliverFillRemaining(child: _buildEmptyState(context))
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final habit = _habits[index];
+                      return HabitCard(
+                        habit: habit,
+                        isCompletedToday: _completedToday[habit.id] ?? false,
+                        streakCount: _streaks[habit.id] ?? 0,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  HabitDetailScreen(habitId: habit.id),
+                            ),
+                          ).then((_) => _loadData());
+                        },
+                        onToggle: () => _toggleCompletion(habit),
+                      );
+                    }, childCount: _habits.length),
+                  ),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'dashboard_fab',
-        onPressed: () async {
-          await Navigator.push(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-          );
-          _loadData();
+          ).then((_) => _loadData());
         },
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('New Habit'),
       ),
     );
   }
