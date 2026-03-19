@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:habit_mastery_league/db/database_helper.dart';
 import 'package:habit_mastery_league/models/habit.dart';
 import 'package:habit_mastery_league/utils/app_colors.dart';
+import 'package:habit_mastery_league/utils/prefs_helper.dart';
 import 'package:habit_mastery_league/widgets/loading_state.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -61,12 +62,114 @@ class _StatsScreenState extends State<StatsScreen> {
       _habits = habits;
       _completionRates = completionRates;
       _weeklyData = weeklyData;
-      _aiSuggestion =
-          'Keep going! Your AI Habit Buddy suggestions will appear here.';
-      _aiReason = 'AI suggestion engine will be connected in the next step.';
-      _aiKey = 'pending_ai_buddy';
+      final aiResult = _generateSuggestion();
+      _aiSuggestion = aiResult['text'] ?? '';
+      _aiReason = aiResult['reason'] ?? '';
+      _aiKey = aiResult['key'] ?? '';
       _loading = false;
     });
+  }
+
+  String _sanitizeKey(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  Map<String, String> _generateSuggestion() {
+    if (_habits.isEmpty) {
+      return {
+        'text': 'Start your league by adding your first habit today.',
+        'reason': 'You have not created any habits yet.',
+        'key': 'rule_1_no_habits',
+      };
+    }
+
+    final now = DateTime.now();
+    final todayKey = DateFormat('yyyy-MM-dd').format(now);
+    final todayCount = _weeklyData[todayKey] ?? 0;
+
+    if (now.hour >= 18 && todayCount == 0) {
+      return {
+        'text':
+            'It is getting late and you have 0 completions today. Go for one quick win to protect momentum.',
+        'reason': 'No completions logged today and it is evening.',
+        'key': 'rule_2_evening_no_completions_$todayKey',
+      };
+    }
+
+    if (_completionRates.isNotEmpty) {
+      final lowest = _completionRates.entries.reduce(
+        (a, b) => a.value <= b.value ? a : b,
+      );
+      if (lowest.value < 0.4) {
+        final percentage = (lowest.value * 100).toStringAsFixed(0);
+        return {
+          'text':
+              '${lowest.key} is at $percentage% completion. Try doing it right after waking up as a trigger cue.',
+          'reason': 'This habit has the lowest consistency.',
+          'key': 'rule_3_lowest_${_sanitizeKey(lowest.key)}',
+        };
+      }
+    }
+
+    if (_completionRates.isNotEmpty) {
+      final highest = _completionRates.entries.reduce(
+        (a, b) => a.value >= b.value ? a : b,
+      );
+      if (highest.value > 0.8) {
+        final percentage = (highest.value * 100).toStringAsFixed(0);
+        return {
+          'text':
+              'Great work! ${highest.key} is at $percentage% completion. Keep the streak alive.',
+          'reason': 'This is your strongest habit right now.',
+          'key': 'rule_4_highest_${_sanitizeKey(highest.key)}',
+        };
+      }
+    }
+
+    if (_habits.isNotEmpty && todayCount == _habits.length) {
+      return {
+        'text':
+            'Perfect day unlocked. You completed all ${_habits.length} habits today.',
+        'reason': 'Every habit was completed today.',
+        'key': 'rule_5_all_done_${_habits.length}_$todayKey',
+      };
+    }
+
+    final weekTotal = _weeklyData.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
+    final average = weekTotal / 7.0;
+    final target = (_habits.length * 0.8).ceil();
+
+    return {
+      'text':
+          'You are averaging ${average.toStringAsFixed(1)} completions per day this week. Aim for at least $target habits per day (80% of your list).',
+      'reason': 'Based on your weekly completion trend.',
+      'key': 'rule_default_${_habits.length}_$weekTotal',
+    };
+  }
+
+  Future<void> _saveFeedback(bool isPositive) async {
+    await PrefsHelper.saveAIFeedback(_aiKey, isPositive);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isPositive
+              ? 'Thanks for the thumbs up!'
+              : 'Thanks for the feedback. I will suggest a new focus.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    await _loadData();
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -306,23 +409,37 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildAIBuddyPlaceholder(BuildContext context) {
+  Widget _buildAIBuddyCard(BuildContext context) {
+    final feedback = PrefsHelper.getAIFeedback(_aiKey);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'AI Habit Buddy',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            Row(
+              children: [
+                const Text(
+                  '🤖',
+                  style: TextStyle(fontSize: 20),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'AI Habit Buddy',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
-            Text(_aiSuggestion),
-            const SizedBox(height: 6),
+            Text(
+              _aiSuggestion,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
             Text(
               'Why: $_aiReason',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -330,10 +447,31 @@ class _StatsScreenState extends State<StatsScreen> {
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Suggestion ID: $_aiKey',
-              style: Theme.of(context).textTheme.labelSmall,
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Text(
+                  'Was this helpful?',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => _saveFeedback(true),
+                  icon: Icon(
+                    feedback == true ? Icons.thumb_up : Icons.thumb_up_outlined,
+                    color: feedback == true ? Colors.green : Colors.grey,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _saveFeedback(false),
+                  icon: Icon(
+                    feedback == false
+                        ? Icons.thumb_down
+                        : Icons.thumb_down_outlined,
+                    color: feedback == false ? Colors.red : Colors.grey,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -387,7 +525,7 @@ class _StatsScreenState extends State<StatsScreen> {
               _buildBestStreaksPlaceholder(context),
               const SizedBox(height: 12),
             ],
-            _buildAIBuddyPlaceholder(context),
+            _buildAIBuddyCard(context),
           ],
         ),
       ),
