@@ -13,26 +13,31 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  int _habitsRefreshVersion = 0;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    HabitsListScreen(),
-    StatsScreen(),
-    SettingsScreen(),
-  ];
- 
+  List<Widget> _buildScreens() {
+    return [
+      const DashboardScreen(),
+      HabitsListScreen(key: ValueKey('habits_$_habitsRefreshVersion')),
+      const StatsScreen(),
+      const SettingsScreen(),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screens = _buildScreens();
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
+            if (index == 1) {
+              _habitsRefreshVersion++;
+            }
           });
         },
         destinations: const [

@@ -61,7 +61,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final completion = Completion(habitId: habit.id, completedDate: today);
 
     await _db.insertCompletion(completion);
-    await _loadData();
+    final completions = await _db.getCompletionsForHabit(habit.id);
+    final updatedStreak = calculateCurrentStreak(completions);
+
+    if (!mounted) return;
+
+    setState(() {
+      _completedToday[habit.id] = true;
+      _streaks[habit.id] = updatedStreak;
+    });
   }
 
   String _getGreeting() {

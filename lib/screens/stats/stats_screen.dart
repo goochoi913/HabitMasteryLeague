@@ -16,6 +16,7 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   final DatabaseHelper _db = DatabaseHelper.instance;
+  final ScrollController _scrollController = ScrollController();
 
   List<Habit> _habits = [];
   Map<String, double> _completionRates = {};
@@ -23,6 +24,7 @@ class _StatsScreenState extends State<StatsScreen> {
   String _aiSuggestion = '';
   String _aiReason = '';
   String _aiKey = '';
+  String? _skipRuleKeyOnce;
   bool _loading = true;
 
   @override
@@ -31,8 +33,19 @@ class _StatsScreenState extends State<StatsScreen> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData({
+    bool showLoading = true,
+    double? restoreOffset,
+  }) async {
+    if (showLoading) {
+      setState(() => _loading = true);
+    }
 
     final habits = await _db.getAllHabits();
     final completionRates = <String, double>{};
@@ -66,8 +79,18 @@ class _StatsScreenState extends State<StatsScreen> {
       _aiSuggestion = aiResult['text'] ?? '';
       _aiReason = aiResult['reason'] ?? '';
       _aiKey = aiResult['key'] ?? '';
+      _skipRuleKeyOnce = null;
       _loading = false;
     });
+
+    if (restoreOffset != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients) return;
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        final target = restoreOffset.clamp(0.0, maxScroll);
+        _scrollController.jumpTo(target);
+      });
+    }
   }
 
   String _sanitizeKey(String value) {
@@ -79,12 +102,21 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Map<String, String> _generateSuggestion() {
+    Map<String, String>? pickCandidate(Map<String, String> candidate) {
+      if (_skipRuleKeyOnce != null && candidate['key'] == _skipRuleKeyOnce) {
+        return null;
+      }
+      return candidate;
+    }
+
     if (_habits.isEmpty) {
-      return {
+      final candidate = {
         'text': 'Start your league by adding your first habit today.',
         'reason': 'You have not created any habits yet.',
         'key': 'rule_1_no_habits',
       };
+      final picked = pickCandidate(candidate);
+      if (picked != null) return picked;
     }
 
     final now = DateTime.now();
@@ -92,12 +124,14 @@ class _StatsScreenState extends State<StatsScreen> {
     final todayCount = _weeklyData[todayKey] ?? 0;
 
     if (now.hour >= 18 && todayCount == 0) {
-      return {
+      final candidate = {
         'text':
             'It is getting late and you have 0 completions today. Go for one quick win to protect momentum.',
         'reason': 'No completions logged today and it is evening.',
         'key': 'rule_2_evening_no_completions_$todayKey',
       };
+      final picked = pickCandidate(candidate);
+      if (picked != null) return picked;
     }
 
     if (_completionRates.isNotEmpty) {
@@ -106,12 +140,14 @@ class _StatsScreenState extends State<StatsScreen> {
       );
       if (lowest.value < 0.4) {
         final percentage = (lowest.value * 100).toStringAsFixed(0);
-        return {
+        final candidate = {
           'text':
               '${lowest.key} is at $percentage% completion. Try doing it right after waking up as a trigger cue.',
           'reason': 'This habit has the lowest consistency.',
           'key': 'rule_3_lowest_${_sanitizeKey(lowest.key)}',
         };
+        final picked = pickCandidate(candidate);
+        if (picked != null) return picked;
       }
     }
 
@@ -121,22 +157,26 @@ class _StatsScreenState extends State<StatsScreen> {
       );
       if (highest.value > 0.8) {
         final percentage = (highest.value * 100).toStringAsFixed(0);
-        return {
+        final candidate = {
           'text':
               'Great work! ${highest.key} is at $percentage% completion. Keep the streak alive.',
           'reason': 'This is your strongest habit right now.',
           'key': 'rule_4_highest_${_sanitizeKey(highest.key)}',
         };
+        final picked = pickCandidate(candidate);
+        if (picked != null) return picked;
       }
     }
 
     if (_habits.isNotEmpty && todayCount == _habits.length) {
-      return {
+      final candidate = {
         'text':
             'Perfect day unlocked. You completed all ${_habits.length} habits today.',
         'reason': 'Every habit was completed today.',
         'key': 'rule_5_all_done_${_habits.length}_$todayKey',
       };
+      final picked = pickCandidate(candidate);
+      if (picked != null) return picked;
     }
 
     final weekTotal = _weeklyData.values.fold<int>(
@@ -146,15 +186,31 @@ class _StatsScreenState extends State<StatsScreen> {
     final average = weekTotal / 7.0;
     final target = (_habits.length * 0.8).ceil();
 
-    return {
+    final defaultCandidate = {
       'text':
           'You are averaging ${average.toStringAsFixed(1)} completions per day this week. Aim for at least $target habits per day (80% of your list).',
       'reason': 'Based on your weekly completion trend.',
       'key': 'rule_default_${_habits.length}_$weekTotal',
     };
+    final pickedDefault = pickCandidate(defaultCandidate);
+    if (pickedDefault != null) return pickedDefault;
+
+    return {
+      'text':
+          'Try a different focus: pick one habit and finish it in the next hour for a quick reset.',
+      'reason':
+          'Showing an alternate suggestion based on your recent feedback.',
+      'key': 'rule_feedback_alternate',
+    };
   }
 
   Future<void> _saveFeedback(bool isPositive) async {
+    final currentKey = _aiKey;
+    final currentOffset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0.0;
+
+    _skipRuleKeyOnce = currentKey;
     await PrefsHelper.saveAIFeedback(_aiKey, isPositive);
     if (!mounted) return;
 
@@ -169,7 +225,7 @@ class _StatsScreenState extends State<StatsScreen> {
       ),
     );
 
-    await _loadData();
+    await _loadData(showLoading: false, restoreOffset: currentOffset);
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -308,7 +364,7 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 200,
+              height: 280,
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
@@ -344,6 +400,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        reservedSize: 78,
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
                           if (index < 0 || index >= entries.length) {
@@ -352,9 +409,19 @@ class _StatsScreenState extends State<StatsScreen> {
 
                           return Padding(
                             padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              truncateHabitName(entries[index].key),
-                              style: Theme.of(context).textTheme.bodySmall,
+                            child: Transform.rotate(
+                              angle: -0.8,
+                              alignment: Alignment.topRight,
+                              child: SizedBox(
+                                width: 62,
+                                child: Text(
+                                  truncateHabitName(entries[index].key),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -371,7 +438,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         BarChartRodData(
                           toY: rate,
                           color: AppColors.primary,
-                          width: 18,
+                          width: 14,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(8),
                           ),
@@ -535,6 +602,7 @@ class _StatsScreenState extends State<StatsScreen> {
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: ListView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
             _buildWeeklyHeatmapCard(context),
