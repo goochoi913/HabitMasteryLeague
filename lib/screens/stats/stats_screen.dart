@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_mastery_league/db/database_helper.dart';
 import 'package:habit_mastery_league/models/habit.dart';
@@ -182,7 +183,14 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildBarChartPlaceholder(BuildContext context) {
+  Widget _buildCompletionRatesChart(BuildContext context) {
+    final entries = _completionRates.entries.toList();
+
+    String truncateHabitName(String name) {
+      if (name.length <= 8) return name;
+      return '${name.substring(0, 8)}..';
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -195,9 +203,81 @@ class _StatsScreenState extends State<StatsScreen> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${_completionRates.length} habits analyzed for completion rates.',
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: 1.0,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 0.25,
+                  ),
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 34,
+                        getTitlesWidget: (value, meta) {
+                          if (value == 0 || value == 0.5 || value == 1) {
+                            return Text(
+                              '${(value * 100).toInt()}%',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 || index >= entries.length) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              truncateHabitName(entries[index].key),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  barGroups: entries.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final rate = entry.value.value;
+
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: rate,
+                          color: AppColors.primary,
+                          width: 18,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(8),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ],
         ),
@@ -302,7 +382,7 @@ class _StatsScreenState extends State<StatsScreen> {
             _buildWeeklyHeatmapCard(context),
             const SizedBox(height: 12),
             if (_habits.isNotEmpty) ...[
-              _buildBarChartPlaceholder(context),
+              _buildCompletionRatesChart(context),
               const SizedBox(height: 12),
               _buildBestStreaksPlaceholder(context),
               const SizedBox(height: 12),
