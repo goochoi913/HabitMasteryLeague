@@ -388,7 +388,11 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildBestStreaksPlaceholder(BuildContext context) {
+  Widget _buildBestStreaksCard(BuildContext context) {
+    final rankedHabits = _completionRates.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topHabits = rankedHabits.take(5).toList();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -401,8 +405,36 @@ class _StatsScreenState extends State<StatsScreen> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text('Best streak summary will appear here.'),
+            const SizedBox(height: 10),
+            ...topHabits.asMap().entries.map((entry) {
+              final index = entry.key;
+              final habitName = entry.value.key;
+              final percentage = (entry.value.value * 100).toStringAsFixed(0);
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == topHabits.length - 1 ? 0 : 10,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        habitName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    Text(
+                      '$percentage%',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -420,10 +452,7 @@ class _StatsScreenState extends State<StatsScreen> {
           children: [
             Row(
               children: [
-                const Text(
-                  '🤖',
-                  style: TextStyle(fontSize: 20),
-                ),
+                const Text('🤖', style: TextStyle(fontSize: 20)),
                 const SizedBox(width: 8),
                 Text(
                   'AI Habit Buddy',
@@ -435,10 +464,7 @@ class _StatsScreenState extends State<StatsScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
-              _aiSuggestion,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text(_aiSuggestion, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 8),
             Text(
               'Why: $_aiReason',
@@ -492,10 +518,7 @@ class _StatsScreenState extends State<StatsScreen> {
         appBar: AppBar(
           title: const Text('My Stats'),
           actions: [
-            IconButton(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh),
-            ),
+            IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
           ],
         ),
         body: _buildEmptyState(context),
@@ -506,10 +529,7 @@ class _StatsScreenState extends State<StatsScreen> {
       appBar: AppBar(
         title: const Text('My Stats'),
         actions: [
-          IconButton(
-            onPressed: _loadData,
-            icon: const Icon(Icons.refresh),
-          ),
+          IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: RefreshIndicator(
@@ -522,7 +542,7 @@ class _StatsScreenState extends State<StatsScreen> {
             if (_habits.isNotEmpty) ...[
               _buildCompletionRatesChart(context),
               const SizedBox(height: 12),
-              _buildBestStreaksPlaceholder(context),
+              _buildBestStreaksCard(context),
               const SizedBox(height: 12),
             ],
             _buildAIBuddyCard(context),
