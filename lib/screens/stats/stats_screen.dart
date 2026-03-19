@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:habit_mastery_league/db/database_helper.dart';
 import 'package:habit_mastery_league/models/habit.dart';
+import 'package:habit_mastery_league/utils/app_colors.dart';
 import 'package:habit_mastery_league/widgets/loading_state.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -99,7 +101,23 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildWeeklySectionPlaceholder(BuildContext context) {
+  Widget _buildWeeklyHeatmapCard(BuildContext context) {
+    final now = DateTime.now();
+    final days = List.generate(
+      7,
+      (index) => now.subtract(Duration(days: 6 - index)),
+    );
+
+    final maxCount = _weeklyData.values.isEmpty
+        ? 1
+        : _weeklyData.values.reduce((a, b) => a > b ? a : b);
+    final safeMaxCount = maxCount < 1 ? 1 : maxCount;
+
+    String dayLabel(DateTime date) {
+      const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+      return labels[date.weekday - 1];
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -112,9 +130,51 @@ class _StatsScreenState extends State<StatsScreen> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${_weeklyData.values.fold<int>(0, (sum, count) => sum + count)} total completions loaded for this week.',
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: days.map((date) {
+                final dateKey = DateFormat('yyyy-MM-dd').format(date);
+                final count = _weeklyData[dateKey] ?? 0;
+                final intensity = count / safeMaxCount;
+                final isToday =
+                    date.year == now.year &&
+                    date.month == now.month &&
+                    date.day == now.day;
+
+                return Column(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(
+                          0.2 + (0.8 * intensity),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: isToday
+                            ? Border.all(color: AppColors.primary, width: 2)
+                            : null,
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: intensity > 0.5
+                              ? Colors.white
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      dayLabel(date),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                );
+              }).toList(),
             ),
           ],
         ),
@@ -239,7 +299,7 @@ class _StatsScreenState extends State<StatsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            _buildWeeklySectionPlaceholder(context),
+            _buildWeeklyHeatmapCard(context),
             const SizedBox(height: 12),
             if (_habits.isNotEmpty) ...[
               _buildBarChartPlaceholder(context),
