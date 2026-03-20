@@ -13,13 +13,15 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  int _dashboardRefreshVersion = 0;
   int _habitsRefreshVersion = 0;
+  int _statsRefreshVersion = 0;
 
   List<Widget> _buildScreens() {
     return [
-      const DashboardScreen(),
+      DashboardScreen(key: ValueKey('dashboard_$_dashboardRefreshVersion')),
       HabitsListScreen(key: ValueKey('habits_$_habitsRefreshVersion')),
-      const StatsScreen(),
+      StatsScreen(key: ValueKey('stats_$_statsRefreshVersion')),
       const SettingsScreen(),
     ];
   }
@@ -35,8 +37,12 @@ class _MainNavigationState extends State<MainNavigation> {
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
-            if (index == 1) {
+            if (index == 0) {
+              _dashboardRefreshVersion++;
+            } else if (index == 1) {
               _habitsRefreshVersion++;
+            } else if (index == 2) {
+              _statsRefreshVersion++;
             }
           });
         },

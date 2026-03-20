@@ -24,6 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Habit> _habits = [];
   Map<String, bool> _completedToday = {};
   Map<String, int> _streaks = {};
+  final Set<String> _completionInProgress = <String>{};
   bool _loading = true;
 
   @override
@@ -57,20 +58,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _toggleCompletion(Habit habit) async {
     if (_completedToday[habit.id] == true) return;
+    if (_completionInProgress.contains(habit.id)) return;
 
     final today = DateTime.now().toIso8601String().substring(0, 10);
     final completion = Completion(habitId: habit.id, completedDate: today);
+    _completionInProgress.add(habit.id);
 
-    await _db.insertCompletion(completion);
-    final completions = await _db.getCompletionsForHabit(habit.id);
-    final updatedStreak = calculateCurrentStreak(completions);
+    try {
+      await _db.insertCompletion(completion);
+      final completions = await _db.getCompletionsForHabit(habit.id);
+      final updatedStreak = calculateCurrentStreak(completions);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _completedToday[habit.id] = true;
-      _streaks[habit.id] = updatedStreak;
-    });
+      setState(() {
+        _completedToday[habit.id] = true;
+        _streaks[habit.id] = updatedStreak;
+      });
+    } finally {
+      _completionInProgress.remove(habit.id);
+    }
   }
 
   String _getGreeting() {
