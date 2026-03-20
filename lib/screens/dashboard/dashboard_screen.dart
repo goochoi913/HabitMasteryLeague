@@ -89,7 +89,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icon(
             Icons.self_improvement,
             size: 80,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -102,7 +104,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(
             'Tap + to create your first habit mission.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -156,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -202,9 +206,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               '${(progress * 100).toStringAsFixed(0)}% complete',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.6),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
                                   ),
                             ),
                           ],

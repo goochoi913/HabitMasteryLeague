@@ -20,8 +20,9 @@ class HabitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final categoryColor =
-        AppColors.categories[habit.category] ?? Colors.grey;
+        AppColors.categories[habit.category] ?? colorScheme.primary;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -47,30 +48,28 @@ class HabitCard extends StatelessWidget {
                   children: [
                     Text(
                       habit.name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            decoration: isCompletedToday
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: isCompletedToday
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.4)
-                                : null,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        decoration: isCompletedToday
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: isCompletedToday
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4)
+                            : null,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: categoryColor.withOpacity(0.15),
+                            color: categoryColor.withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -114,23 +113,17 @@ class HabitCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: isCompletedToday
-                        ? Colors.green
-                        : Colors.transparent,
+                    color: isCompletedToday ? Colors.green : Colors.transparent,
                     border: Border.all(
                       color: isCompletedToday
                           ? Colors.green
-                          : Colors.grey.shade400,
+                          : colorScheme.outlineVariant,
                       width: 2,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: isCompletedToday
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 18,
-                        )
+                      ? const Icon(Icons.check, color: Colors.white, size: 18)
                       : null,
                 ),
               ),

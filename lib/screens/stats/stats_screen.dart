@@ -238,7 +238,9 @@ class _StatsScreenState extends State<StatsScreen> {
             Icon(
               Icons.bar_chart,
               size: 72,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
@@ -252,7 +254,9 @@ class _StatsScreenState extends State<StatsScreen> {
               'Add your first habit to start tracking progress and insights.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -309,9 +313,13 @@ class _StatsScreenState extends State<StatsScreen> {
                       height: 36,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(
-                          0.2 + (0.8 * intensity),
-                        ),
+                        color: count == 0
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest
+                            : AppColors.primary.withValues(
+                                alpha: 0.2 + (0.8 * intensity),
+                              ),
                         borderRadius: BorderRadius.circular(10),
                         border: isToday
                             ? Border.all(color: AppColors.primary, width: 2)
@@ -537,7 +545,9 @@ class _StatsScreenState extends State<StatsScreen> {
               'Why: $_aiReason',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontStyle: FontStyle.italic,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 14),
@@ -552,7 +562,9 @@ class _StatsScreenState extends State<StatsScreen> {
                   onPressed: () => _saveFeedback(true),
                   icon: Icon(
                     feedback == true ? Icons.thumb_up : Icons.thumb_up_outlined,
-                    color: feedback == true ? Colors.green : Colors.grey,
+                    color: feedback == true
+                        ? Colors.green
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 IconButton(
@@ -561,7 +573,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     feedback == false
                         ? Icons.thumb_down
                         : Icons.thumb_down_outlined,
-                    color: feedback == false ? Colors.red : Colors.grey,
+                    color: feedback == false
+                        ? Colors.red
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

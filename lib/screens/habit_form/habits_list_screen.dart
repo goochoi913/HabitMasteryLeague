@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../db/database_helper.dart';
 import '../../models/habit.dart';
 import '../../models/completion.dart';
+import '../../utils/streak_utils.dart';
 import '../../widgets/habit_card.dart';
 import '../../widgets/loading_state.dart';
 import 'add_edit_habit_screen.dart';
-import '../habit_detail/habit_detail_screen.dart';
 
 class HabitsListScreen extends StatefulWidget {
   const HabitsListScreen({super.key});
@@ -52,20 +51,7 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
 
   Future<int> _calculateStreak(String habitId) async {
     final completions = await _db.getCompletionsForHabit(habitId);
-    if (completions.isEmpty) return 0;
-    final dates = completions.map((c) => c.completedDate).toSet();
-    int streak = 0;
-    DateTime check = DateTime.now();
-    while (true) {
-      final dateStr = DateFormat('yyyy-MM-dd').format(check);
-      if (dates.contains(dateStr)) {
-        streak++;
-        check = check.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    return streak;
+    return calculateCurrentStreak(completions);
   }
 
   Future<void> _toggleCompletion(Habit habit) async {
@@ -82,7 +68,8 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Habit'),
         content: Text(
-            'Are you sure you want to delete "${habit.name}"? This will also remove all its completion history.'),
+          'Are you sure you want to delete "${habit.name}"? This will also remove all its completion history.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -102,9 +89,9 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
     if (confirmed == true) {
       await _db.deleteHabit(habit.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${habit.name}" deleted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('"${habit.name}" deleted')));
       }
       await _loadData();
     }
@@ -121,85 +108,89 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
               child: Text(
                 'My Habits',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             Expanded(
               child: _isLoading
                   ? const LoadingState(message: 'Loading habits...')
                   : _habits.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.checklist,
-                                  size: 64,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.3)),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No habits yet.\nTap + to add one!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.5),
-                                ),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.checklist,
+                            size: 64,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadData,
-                          child: ListView.builder(
-                            itemCount: _habits.length,
-                            itemBuilder: (context, index) {
-                              final habit = _habits[index];
-                              return Dismissible(
-                                key: Key(habit.id),
-                                direction: DismissDirection.endToStart,
-                                confirmDismiss: (_) async {
-                                  await _confirmDelete(habit);
-                                  return false; // we handle deletion ourselves
-                                },
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 24),
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.error,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: const Icon(Icons.delete,
-                                      color: Colors.white),
-                                ),
-                                child: HabitCard(
-                                  habit: habit,
-                                  isCompletedToday:
-                                      _completedToday[habit.id] ?? false,
-                                  streakCount: _streaks[habit.id] ?? 0,
-                                  onTap: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => AddEditHabitScreen(habit: habit),
-                                      ),
-                                    );
-                                    _loadData();
-                                  },
-                                  onToggle: () => _toggleCompletion(habit),
-                                ),
-                              );
+                          const SizedBox(height: 16),
+                          Text(
+                            'No habits yet.\nTap + to add one!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
+                      child: ListView.builder(
+                        itemCount: _habits.length,
+                        itemBuilder: (context, index) {
+                          final habit = _habits[index];
+                          return Dismissible(
+                            key: Key(habit.id),
+                            direction: DismissDirection.endToStart,
+                            confirmDismiss: (_) async {
+                              await _confirmDelete(habit);
+                              return false; // we handle deletion ourselves
                             },
-                          ),
-                        ),
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 24),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.error,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
+                            ),
+                            child: HabitCard(
+                              habit: habit,
+                              isCompletedToday:
+                                  _completedToday[habit.id] ?? false,
+                              streakCount: _streaks[habit.id] ?? 0,
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        AddEditHabitScreen(habit: habit),
+                                  ),
+                                );
+                                _loadData();
+                              },
+                              onToggle: () => _toggleCompletion(habit),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
