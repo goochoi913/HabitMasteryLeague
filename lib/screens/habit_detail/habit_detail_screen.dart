@@ -275,6 +275,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final categoryColor =
         AppColors.categories[habit.category] ??
         Theme.of(context).colorScheme.primary;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       appBar: AppBar(title: Text(habit.name)),
@@ -285,7 +287,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             final completedDates = snapshot.data ?? [];
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, isLandscape ? 96 : 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -388,7 +390,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                           const SizedBox(height: 8),
                           GridView.count(
                             crossAxisCount: 7,
-                            childAspectRatio: 1,
+                            childAspectRatio: isLandscape ? 1.35 : 1,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             children: _buildCalendarCells(
@@ -428,7 +430,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         ),
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        minimum: EdgeInsets.fromLTRB(16, 0, 16, isLandscape ? 8 : 16),
         child: Semantics(
           label: _completedToday
               ? 'Already completed today'

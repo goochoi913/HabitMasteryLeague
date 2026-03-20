@@ -116,6 +116,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildProgressCard(
+    BuildContext context,
+    int completedCount,
+    int total,
+    double progress,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Today's Progress",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '$completedCount / $total',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 10,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${(progress * 100).toStringAsFixed(0)}% complete',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHabitsCardsList() {
+    return ListView.builder(
+      itemCount: _habits.length,
+      itemBuilder: (context, index) {
+        final habit = _habits[index];
+        return HabitCard(
+          habit: habit,
+          isCompletedToday: _completedToday[habit.id] ?? false,
+          streakCount: _streaks[habit.id] ?? 0,
+          onTap: () {
+            Navigator.push(
+              context,
+              SlideUpRoute(page: HabitDetailScreen(habitId: habit.id)),
+            ).then((_) => _loadData());
+          },
+          onToggle: () => _toggleCompletion(habit),
+        );
+      },
+    );
+  }
+
+  Widget _buildAddHabitFab() {
+    return Semantics(
+      label: 'Add new habit',
+      button: true,
+      child: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            SlideUpRoute(page: const AddEditHabitScreen()),
+          ).then((_) => _loadData());
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('New Habit'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -127,6 +221,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final completedCount = _completedToday.values.where((v) => v).length;
     final total = _habits.length;
     final progress = total == 0 ? 0.0 : completedCount / total;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (isLandscape) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Habit Mastery League',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          actions: [
+            IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getGreeting(),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildProgressCard(
+                          context,
+                          completedCount,
+                          total,
+                          progress,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 6,
+                  child: _habits.isEmpty
+                      ? _buildEmptyState(context)
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          child: _buildHabitsCardsList(),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        floatingActionButton: _buildAddHabitFab(),
+      );
+    }
 
     return Scaffold(
       body: RefreshIndicator(
@@ -166,57 +328,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "Today's Progress",
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  '$completedCount / $total',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 10,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${(progress * 100).toStringAsFixed(0)}% complete',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    _buildProgressCard(
+                      context,
+                      completedCount,
+                      total,
+                      progress,
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -248,20 +364,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-      floatingActionButton: Semantics(
-        label: 'Add new habit',
-        button: true,
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              SlideUpRoute(page: const AddEditHabitScreen()),
-            ).then((_) => _loadData());
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('New Habit'),
-        ),
-      ),
+      floatingActionButton: _buildAddHabitFab(),
     );
   }
 }
