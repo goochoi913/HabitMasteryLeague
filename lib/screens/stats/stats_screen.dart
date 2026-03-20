@@ -637,21 +637,3 @@ class _StatsScreenState extends State<StatsScreen> {
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: [
-            _buildWeeklyHeatmapCard(context),
-            const SizedBox(height: 12),
-            if (_habits.isNotEmpty) ...[
-              _buildCompletionRatesChart(context),
-              const SizedBox(height: 12),
-              _buildBestStreaksCard(context),
-              const SizedBox(height: 12),
-            ],
-            _buildAIBuddyCard(context),
-          ],
-        ),
-      ),
-    );
-  }
-}
