@@ -74,7 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    final name = PrefsHelper.getUsername();
+    final storedName = PrefsHelper.getUsername().trim();
+    final name = storedName.isEmpty ? 'Habit Hero' : storedName;
 
     if (hour < 12) return 'Good Morning, $name! ☀️';
     if (hour < 18) return 'Good Afternoon, $name! 👋';
