@@ -139,13 +139,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '$hh:$mm';
   }
 
+  Widget _buildSectionLabel(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      child: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        body: SafeArea(
-          child: LoadingState(message: 'Loading settings...'),
-        ),
+        body: SafeArea(child: LoadingState(message: 'Loading settings...')),
       );
     }
 
@@ -153,27 +163,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = themeProvider.isDark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
+          _buildSectionLabel(context, 'Profile'),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Profile',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
                   TextField(
                     controller: _nameController,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _saveUsername(),
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.person),
                       labelText: 'Display Name',
@@ -188,6 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          _buildSectionLabel(context, 'Appearance'),
           Card(
             child: SwitchListTile(
               value: isDark,
@@ -204,6 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          _buildSectionLabel(context, 'Notifications'),
           Card(
             child: ListTile(
               leading: const Icon(Icons.alarm),
@@ -214,6 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          _buildSectionLabel(context, 'Data'),
           Card(
             child: ListTile(
               leading: Icon(
@@ -237,11 +244,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Habit Mastery League\n1.0.0 • Team Bok Choy\nCSC 4360',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.6),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           ),
         ],
