@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:habit_mastery_league/db/database_helper.dart';
 import 'package:habit_mastery_league/providers/theme_provider.dart';
@@ -119,6 +123,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _exportData() async {
+    try {
+      final habits = await DatabaseHelper.instance.getAllHabits();
+      final exportPayload = <Map<String, dynamic>>[];
+
+      for (final habit in habits) {
+        final completions = await DatabaseHelper.instance
+            .getCompletionsForHabit(habit.id);
+        exportPayload.add({
+          'habit': habit.toMap(),
+          'completions': completions
+              .map((completion) => completion.toMap())
+              .toList(),
+        });
+      }
+
+      final encoder = const JsonEncoder.withIndent('  ');
+      final jsonContent = encoder.convert(exportPayload);
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = '${documentsDir.path}/habit_export_$timestamp.json';
+      final file = File(filePath);
+
+      await file.writeAsString(jsonContent);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Exported JSON to: $filePath'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to export data.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   TimeOfDay? _parseStoredTime(String? value) {
@@ -246,20 +293,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           _buildSectionLabel(context, 'Data'),
           Card(
-            child: ListTile(
-              leading: Icon(
-                Icons.delete_forever,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              title: Text(
-                'Reset All Data',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontWeight: FontWeight.w600,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.upload_file, color: Colors.blue),
+                  title: const Text('Export Data (JSON)'),
+                  subtitle: const Text(
+                    'Save all habits and history as a JSON file',
+                  ),
+                  onTap: _exportData,
                 ),
-              ),
-              subtitle: const Text('Delete all habits and history'),
-              onTap: _resetAllData,
+                Divider(
+                  height: 1,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.3),
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_forever,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    'Reset All Data',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: const Text('Delete all habits and history'),
+                  onTap: _resetAllData,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
