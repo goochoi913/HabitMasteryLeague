@@ -22,6 +22,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   Habit? _habit;
   bool _completedToday = false;
+  bool _showCelebration = false;
   bool _loading = true;
   String? _errorMessage;
 
@@ -84,7 +85,19 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
 
     await _db.insertCompletion(completion);
+    if (mounted) {
+      setState(() {
+        _showCelebration = true;
+      });
+    }
+
     await _loadData();
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() {
+        _showCelebration = false;
+      });
+    });
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -418,17 +431,24 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: GestureDetector(
           onLongPress: _completedToday ? _undoCompletion : null,
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton.icon(
-              onPressed: _completedToday ? null : _markComplete,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _completedToday ? Colors.green : null,
-                foregroundColor: _completedToday ? Colors.white : null,
-              ),
-              icon: Icon(_completedToday ? Icons.check_circle : Icons.task_alt),
-              label: Text(
-                _completedToday ? 'Completed Today! ✓' : 'Mark as Complete',
+          child: AnimatedScale(
+            scale: _showCelebration ? 1.08 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.elasticOut,
+            child: SizedBox(
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: _completedToday ? null : _markComplete,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _completedToday ? Colors.green : null,
+                  foregroundColor: _completedToday ? Colors.white : null,
+                ),
+                icon: Icon(
+                  _completedToday ? Icons.check_circle : Icons.task_alt,
+                ),
+                label: Text(
+                  _completedToday ? 'Completed Today! ✓' : 'Mark as Complete',
+                ),
               ),
             ),
           ),
