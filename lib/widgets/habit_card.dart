@@ -106,25 +106,33 @@ class HabitCard extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: onToggle,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: isCompletedToday ? Colors.green : Colors.transparent,
-                    border: Border.all(
+              Semantics(
+                label: isCompletedToday
+                    ? 'Undo completion for ${habit.name}'
+                    : 'Mark ${habit.name} as complete',
+                button: true,
+                child: GestureDetector(
+                  onTap: onToggle,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
                       color: isCompletedToday
                           ? Colors.green
-                          : colorScheme.outlineVariant,
-                      width: 2,
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isCompletedToday
+                            ? Colors.green
+                            : colorScheme.outlineVariant,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    child: isCompletedToday
+                        ? const Icon(Icons.check, color: Colors.white, size: 18)
+                        : null,
                   ),
-                  child: isCompletedToday
-                      ? const Icon(Icons.check, color: Colors.white, size: 18)
-                      : null,
                 ),
               ),
             ],

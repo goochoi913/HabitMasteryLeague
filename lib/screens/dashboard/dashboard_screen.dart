@@ -248,15 +248,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            SlideUpRoute(page: const AddEditHabitScreen()),
-          ).then((_) => _loadData());
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Habit'),
+      floatingActionButton: Semantics(
+        label: 'Add new habit',
+        button: true,
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              SlideUpRoute(page: const AddEditHabitScreen()),
+            ).then((_) => _loadData());
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('New Habit'),
+        ),
       ),
     );
   }

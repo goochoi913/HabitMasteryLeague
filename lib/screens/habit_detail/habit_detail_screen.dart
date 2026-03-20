@@ -429,25 +429,31 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: GestureDetector(
-          onLongPress: _completedToday ? _undoCompletion : null,
-          child: AnimatedScale(
-            scale: _showCelebration ? 1.08 : 1.0,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.elasticOut,
-            child: SizedBox(
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _completedToday ? null : _markComplete,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _completedToday ? Colors.green : null,
-                  foregroundColor: _completedToday ? Colors.white : null,
-                ),
-                icon: Icon(
-                  _completedToday ? Icons.check_circle : Icons.task_alt,
-                ),
-                label: Text(
-                  _completedToday ? 'Completed Today! ✓' : 'Mark as Complete',
+        child: Semantics(
+          label: _completedToday
+              ? 'Already completed today'
+              : 'Mark habit as complete for today',
+          button: !_completedToday,
+          child: GestureDetector(
+            onLongPress: _completedToday ? _undoCompletion : null,
+            child: AnimatedScale(
+              scale: _showCelebration ? 1.08 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.elasticOut,
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _completedToday ? null : _markComplete,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _completedToday ? Colors.green : null,
+                    foregroundColor: _completedToday ? Colors.white : null,
+                  ),
+                  icon: Icon(
+                    _completedToday ? Icons.check_circle : Icons.task_alt,
+                  ),
+                  label: Text(
+                    _completedToday ? 'Completed Today! ✓' : 'Mark as Complete',
+                  ),
                 ),
               ),
             ),

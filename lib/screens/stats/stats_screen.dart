@@ -558,24 +558,34 @@ class _StatsScreenState extends State<StatsScreen> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const Spacer(),
-                IconButton(
-                  onPressed: () => _saveFeedback(true),
-                  icon: Icon(
-                    feedback == true ? Icons.thumb_up : Icons.thumb_up_outlined,
-                    color: feedback == true
-                        ? Colors.green
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                Semantics(
+                  label: 'Mark suggestion as helpful',
+                  button: true,
+                  child: IconButton(
+                    onPressed: () => _saveFeedback(true),
+                    icon: Icon(
+                      feedback == true
+                          ? Icons.thumb_up
+                          : Icons.thumb_up_outlined,
+                      color: feedback == true
+                          ? Colors.green
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _saveFeedback(false),
-                  icon: Icon(
-                    feedback == false
-                        ? Icons.thumb_down
-                        : Icons.thumb_down_outlined,
-                    color: feedback == false
-                        ? Colors.red
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                Semantics(
+                  label: 'Mark suggestion as not helpful',
+                  button: true,
+                  child: IconButton(
+                    onPressed: () => _saveFeedback(false),
+                    icon: Icon(
+                      feedback == false
+                          ? Icons.thumb_down
+                          : Icons.thumb_down_outlined,
+                      color: feedback == false
+                          ? Colors.red
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
