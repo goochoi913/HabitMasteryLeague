@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../db/database_helper.dart';
 import '../../models/habit.dart';
 import '../../models/completion.dart';
+import '../../utils/page_routes.dart';
 import '../../utils/streak_utils.dart';
 import '../../widgets/habit_card.dart';
 import '../../widgets/loading_state.dart';
@@ -178,9 +179,8 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
                               onTap: () async {
                                 await Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        AddEditHabitScreen(habit: habit),
+                                  SlideUpRoute(
+                                    page: AddEditHabitScreen(habit: habit),
                                   ),
                                 );
                                 _loadData();
@@ -200,7 +200,7 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+            SlideUpRoute(page: const AddEditHabitScreen()),
           );
           _loadData();
         },

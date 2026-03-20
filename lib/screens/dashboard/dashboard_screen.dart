@@ -5,6 +5,7 @@ import 'package:habit_mastery_league/models/completion.dart';
 import 'package:habit_mastery_league/models/habit.dart';
 import 'package:habit_mastery_league/utils/prefs_helper.dart';
 import 'package:habit_mastery_league/utils/streak_utils.dart';
+import 'package:habit_mastery_league/utils/page_routes.dart';
 import 'package:habit_mastery_league/widgets/habit_card.dart';
 import 'package:habit_mastery_league/widgets/loading_state.dart';
 import 'package:habit_mastery_league/screens/habit_form/add_edit_habit_screen.dart';
@@ -234,9 +235,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  HabitDetailScreen(habitId: habit.id),
+                            SlideUpRoute(
+                              page: HabitDetailScreen(habitId: habit.id),
                             ),
                           ).then((_) => _loadData());
                         },
@@ -252,7 +252,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+            SlideUpRoute(page: const AddEditHabitScreen()),
           ).then((_) => _loadData());
         },
         icon: const Icon(Icons.add),
