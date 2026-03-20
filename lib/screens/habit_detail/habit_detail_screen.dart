@@ -456,25 +456,4 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               duration: const Duration(milliseconds: 200),
               curve: Curves.elasticOut,
               child: SizedBox(
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _completedToday ? null : _markComplete,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _completedToday ? Colors.green : null,
-                    foregroundColor: _completedToday ? Colors.white : null,
-                  ),
-                  icon: Icon(
-                    _completedToday ? Icons.check_circle : Icons.task_alt,
-                  ),
-                  label: Text(
-                    _completedToday ? 'Completed Today! ✓' : 'Mark as Complete',
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+                height
