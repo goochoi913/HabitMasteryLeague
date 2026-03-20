@@ -165,4 +165,44 @@ class DatabaseHelper {
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
       final rows = await db.query(
         'completions',
-        where: 'completed_date = ?
+        where: 'completed_date = ?',
+        whereArgs: [dateStr],
+      );
+      result[dateStr] = rows.length;
+    }
+    return result;
+  }
+
+  /// Clears all habit and completion data for the destructive reset action.
+  Future<void> deleteAllData() async {
+    final db = await database;
+    await db.delete('completions');
+    await db.delete('habits');
+  }
+
+  /// Removes only today's completion to support undo from the detail screen.
+  Future<void> deleteTodayCompletion(String habitId) async {
+    final db = await database;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    await db.delete(
+      'completions',
+      where: 'habit_id = ? AND completed_date = ?',
+      whereArgs: [habitId, today],
+    );
+  }
+
+  /// Deletes a specific completion row by habit id and stored completion date.
+  Future<void> deleteCompletionByDate(
+    String habitId,
+    String completedDate,
+  ) async {
+    final db = await database;
+
+    await db.delete(
+      'completions',
+      where: 'habit_id = ? AND completed_date = ?',
+      whereArgs: [habitId, completedDate],
+    );
+  }
+}
