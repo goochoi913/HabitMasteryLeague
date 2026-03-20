@@ -151,6 +151,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildThemeModeIcon(BuildContext context, bool isDark) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(scale: animation, child: child),
+        );
+      },
+      child: Container(
+        key: ValueKey<bool>(isDark),
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDark
+              ? colorScheme.primary.withValues(alpha: 0.18)
+              : colorScheme.tertiary.withValues(alpha: 0.18),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          isDark ? Icons.dark_mode : Icons.light_mode,
+          color: isDark ? colorScheme.primary : colorScheme.tertiary,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -199,13 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (_) => themeProvider.toggleTheme(),
               title: const Text('Dark Mode'),
               subtitle: Text(isDark ? 'Enabled' : 'Disabled'),
-              secondary: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Icon(
-                  isDark ? Icons.dark_mode : Icons.light_mode,
-                  key: ValueKey<bool>(isDark),
-                ),
-              ),
+              secondary: _buildThemeModeIcon(context, isDark),
             ),
           ),
           const SizedBox(height: 12),
