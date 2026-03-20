@@ -13,7 +13,6 @@ class DatabaseHelper {
 
   factory DatabaseHelper() => instance;
 
-  /// Returns the shared database connection, creating it lazily on first use.
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -59,13 +58,11 @@ class DatabaseHelper {
 
   // ── Habits ──────────────────────────────────────────────
 
-  /// Inserts a newly created habit row into the habits table.
   Future<void> insertHabit(Habit habit) async {
     final db = await database;
     await db.insert('habits', habit.toMap());
   }
 
-  /// Loads all active habits in newest-first order for list and dashboard views.
   Future<List<Habit>> getAllHabits() async {
     final db = await database;
     final maps = await db.query(
@@ -77,7 +74,6 @@ class DatabaseHelper {
     return maps.map((m) => Habit.fromMap(m)).toList();
   }
 
-  /// Fetches one habit by id for detail and edit screens.
   Future<Habit?> getHabitById(String id) async {
     final db = await database;
     final maps = await db.query('habits', where: 'id = ?', whereArgs: [id]);
@@ -85,7 +81,6 @@ class DatabaseHelper {
     return Habit.fromMap(maps.first);
   }
 
-  /// Persists edits to an existing habit while keeping the original id.
   Future<void> updateHabit(Habit habit) async {
     final db = await database;
     await db.update(
@@ -96,7 +91,6 @@ class DatabaseHelper {
     );
   }
 
-  /// Deletes a habit row and lets the foreign-key cascade clean related history.
   Future<void> deleteHabit(String id) async {
     final db = await database;
     await db.delete('habits', where: 'id = ?', whereArgs: [id]);
@@ -104,7 +98,6 @@ class DatabaseHelper {
 
   // ── Completions ──────────────────────────────────────────
 
-  /// Inserts a completion record, ignoring duplicate rows for the same day.
   Future<void> insertCompletion(Completion completion) async {
     final db = await database;
     await db.insert(
@@ -114,7 +107,6 @@ class DatabaseHelper {
     );
   }
 
-  /// Checks whether a habit already has a completion entry for today.
   Future<bool> isCompletedToday(String habitId) async {
     final db = await database;
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -126,7 +118,6 @@ class DatabaseHelper {
     return result.isNotEmpty;
   }
 
-  /// Loads all completion rows for a habit so UI can derive streaks and calendars.
   Future<List<Completion>> getCompletionsForHabit(String habitId) async {
     final db = await database;
     final maps = await db.query(
@@ -138,7 +129,6 @@ class DatabaseHelper {
     return maps.map((m) => Completion.fromMap(m)).toList();
   }
 
-  /// Returns only the completion dates needed to color one calendar month.
   Future<List<String>> getCompletedDatesInMonth(
     String habitId,
     int year,
@@ -155,7 +145,6 @@ class DatabaseHelper {
     return maps.map((m) => m['completed_date'] as String).toList();
   }
 
-  /// Aggregates daily completion totals for the last seven days for the stats view.
   Future<Map<String, int>> getWeeklyCompletionCounts() async {
     final db = await database;
     final result = <String, int>{};
@@ -165,4 +154,41 @@ class DatabaseHelper {
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
       final rows = await db.query(
         'completions',
-        where: 'completed_date = ?
+        where: 'completed_date = ?',
+        whereArgs: [dateStr],
+      );
+      result[dateStr] = rows.length;
+    }
+    return result;
+  }
+
+  Future<void> deleteAllData() async {
+    final db = await database;
+    await db.delete('completions');
+    await db.delete('habits');
+  }
+
+  Future<void> deleteTodayCompletion(String habitId) async {
+    final db = await database;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    await db.delete(
+      'completions',
+      where: 'habit_id = ? AND completed_date = ?',
+      whereArgs: [habitId, today],
+    );
+  }
+
+  Future<void> deleteCompletionByDate(
+    String habitId,
+    String completedDate,
+  ) async {
+    final db = await database;
+
+    await db.delete(
+      'completions',
+      where: 'habit_id = ? AND completed_date = ?',
+      whereArgs: [habitId, completedDate],
+    );
+  }
+}

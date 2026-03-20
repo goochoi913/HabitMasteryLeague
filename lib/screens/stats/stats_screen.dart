@@ -101,17 +101,6 @@ class _StatsScreenState extends State<StatsScreen> {
         .replaceAll(RegExp(r'^_|_$'), '');
   }
 
-  /*
-   * Rule priority matters here because the first matching rule becomes the
-   * visible suggestion. The method reads from three live data sources:
-   * - _habits: whether the user has active habits and how many exist
-   * - _weeklyData: today's completion count and weekly activity trend
-   * - _completionRates: weakest and strongest habit consistency
-   *
-   * The generated 'key' identifies which rule produced the message so
-   * feedback can be tied to an explainable rule path instead of a black-box
-   * suggestion.
-   */
   Map<String, String> _generateSuggestion() {
     Map<String, String>? pickCandidate(Map<String, String> candidate) {
       if (_skipRuleKeyOnce != null && candidate['key'] == _skipRuleKeyOnce) {
@@ -637,3 +626,21 @@ class _StatsScreenState extends State<StatsScreen> {
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: ListView(
+          controller: _scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            _buildWeeklyHeatmapCard(context),
+            const SizedBox(height: 12),
+            if (_habits.isNotEmpty) ...[
+              _buildCompletionRatesChart(context),
+              const SizedBox(height: 12),
+              _buildBestStreaksCard(context),
+              const SizedBox(height: 12),
+            ],
+            _buildAIBuddyCard(context),
+          ],
+        ),
+      ),
+    );
+  }
+}
