@@ -62,8 +62,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         _habit = habit;
         _completedToday = completedToday;
         _totalCompletions = completions.length;
-        _currentStreak = calculateCurrentStreak(completions);
-        _bestStreak = calculateBestStreak(completions);
+        _currentStreak = _calcStreak(completions);
+        _bestStreak = _calcBestStreak(completions);
         _loading = false;
       });
     } catch (e) {
@@ -73,6 +73,18 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// 현재 스트릭은 오늘 기준으로 며칠 연속 완료했는지를 뜻합니다.
+  /// 실제 계산은 공통 유틸에 위임해서 다른 화면과 같은 규칙을 유지합니다.
+  int _calcStreak(List<Completion> completions) {
+    return calculateCurrentStreak(completions);
+  }
+
+  /// 최고 스트릭은 과거 어느 시점이든 가장 길었던 연속 완료 구간입니다.
+  /// 현재 완료 여부와 상관없이 전체 기록에서 최대 연속 길이를 계산합니다.
+  int _calcBestStreak(List<Completion> completions) {
+    return calculateBestStreak(completions);
   }
 
   Future<void> _markComplete() async {
@@ -170,6 +182,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       0,
     ).day;
 
+    // 일요일 시작 레이아웃에 맞추기 위해 첫째 날 앞의 빈 칸 수를 계산합니다.
     final leadingSpaces = firstDayOfMonth.weekday % 7;
     final cells = <Widget>[];
 

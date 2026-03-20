@@ -29,4 +29,8 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Habits'), findsOneWidget);
-    expect(fi
+    expect(find.text('Stats'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Loading your habits...'), findsOneWidget);
+  });
+}
