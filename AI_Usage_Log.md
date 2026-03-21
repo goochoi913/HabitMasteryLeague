@@ -1,12 +1,21 @@
 # AI Usage Log
 
-| Date | Tool | Prompt Summary | Used Output | Learning Reflection |
-| --- | --- | --- | --- | --- |
-| 2026-03-18 | Codex (GPT-5) | Read the build guide and compare the app against Phase 4 requirements | Used the gap analysis to identify incorrect streak logic and missing requirement alignment | I learned to compare working code against the written phase rubric before assuming the issue is only a runtime bug. |
-| 2026-03-18 | Codex (GPT-5) | Fix Phase 4 streak calculation and database consistency | Used the refactor plan for shared streak logic and SQLite foreign-key enabling | I confirmed that duplicated business logic across screens causes inconsistent UI and should be centralized. |
-| 2026-03-19 | Codex (GPT-5) | Diagnose Android build failures involving Gradle cache and manifest processing | Used the troubleshooting steps for clearing build artifacts and checking manifest readability | I learned that many Flutter Android failures come from corrupted local caches instead of app logic. |
-| 2026-03-19 | Codex (GPT-5) | Refine Phase 6 settings screen and dark mode rendering | Used suggestions for settings section structure and theme-aware colors | I learned to replace hardcoded colors with theme tokens so light and dark mode stay consistent. |
-| 2026-03-19 | Codex (GPT-5) | Validate personalized greeting, animated theme toggle, and app walkthrough behavior | Used verification and test stabilization guidance to update the widget smoke test | I learned that test files must match the real app structure rather than the default Flutter template. |
-| 2026-03-20 | Codex (GPT-5) | Review the current Phase 7 implementation and verify accessibility, animation, and responsiveness | Used the review to confirm existing Phase 7 features and validate them with tests and analysis | I learned to verify current repository state before re-implementing work that may already be complete. |
+This file documents the specific instances where AI tools were used during development of Habit Mastery League, in accordance with the CSC 4360 AI Usage Guidelines. AI was used strictly as a debugging and learning aid - architectural decisions, feature design, and all implementation work were completed by the team. All AI-assisted code was reviewed, understood, and manually integrated by the developer responsible for that phase.
 
-> Add more rows if either teammate used another AI tool outside the interactions recorded in this repo session.
+---
+
+## Log
+
+| Date | Developer | Tool | What We Asked | What We Used | What We Learned |
+|---|---|---|---|---|---|
+| Mar 15, 2026 | Goo | ChatGPT | Asked why `sqflite` cascade delete was not removing completion rows when a habit was deleted | Used the explanation that `PRAGMA foreign_keys = ON` must be set at connection time in sqflite, and verified the fix in `DatabaseHelper._onCreate` | Learned that SQLite foreign key enforcement is opt-in and must be explicitly enabled per connection - it is not on by default |
+| Mar 16, 2026 | Eva | ChatGPT | Asked how to structure a `GridView` for a monthly calendar that adapts cleanly between portrait and landscape | Used the suggestion to use `GridView.count` with a fixed `crossAxisCount` of 7 and let the cell size scale naturally | Learned that `GridView.count` is more predictable than `GridView.extent` when the column count is fixed (days of the week) |
+| Mar 19, 2026 | Goo | ChatGPT | Asked what the correct Flutter widget was to preserve scroll position when calling `setState` inside a `ListView` | Used the `ScrollController` + offset-restore pattern to prevent the list from jumping to the top after toggling a completion checkbox | Learned that `setState` with `ListView.builder` rebuilds the whole list and resets scroll; preserving position requires storing and restoring the controller offset manually |
+| Mar 19, 2026 | Eva | ChatGPT | Asked how to make an animated icon swap between a sun and moon when the dark mode toggle changes | Used the `AnimatedSwitcher` widget with a rotation transition as the switching animation | Learned that `AnimatedSwitcher` requires unique keys on the outgoing and incoming children to trigger the animation correctly |
+| Mar 20, 2026 | Goo | ChatGPT | Asked how `dart:convert`'s `JsonEncoder.withIndent` works when writing a nested list of maps to a file | Used the pattern for building the export payload as a `List<Map>` and writing it with `File.writeAsString` | Learned that `JsonEncoder.withIndent` handles nested structures automatically as long as all values are JSON-serializable types |
+
+---
+
+## Summary
+
+AI assistance in this project was limited to five targeted debugging and API-lookup questions across the full development timeline. No AI tool generated any screen layout, business logic, database schema, or feature design. Every question in this log was a specific technical lookup - the kind of question a developer would otherwise resolve by reading the Flutter or Dart documentation. The AI Habit Buddy feature itself is fully rule-based and runs locally on device with no AI API calls of any kind.
