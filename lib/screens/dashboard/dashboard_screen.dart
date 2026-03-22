@@ -20,6 +20,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _db = DatabaseHelper.instance;
+  OverlayEntry? _celebrationOverlayEntry;
 
   List<Habit> _habits = [];
   Map<String, bool> _completedToday = {};
@@ -31,6 +32,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _celebrationOverlayEntry?.remove();
+    _celebrationOverlayEntry = null;
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -75,9 +83,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _completedToday[habit.id] = true;
         _streaks[habit.id] = updatedStreak;
       });
+
+      final completedCount = _completedToday.values.where((v) => v).length;
+      final totalHabits = _habits.length;
+      if (totalHabits > 0 && completedCount == totalHabits) {
+        _showCelebrationOverlay();
+      }
     } finally {
       _completionInProgress.remove(habit.id);
     }
+  }
+
+  void _showCelebrationOverlay() {
+    if (_celebrationOverlayEntry != null || !mounted) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) {
+        return _CelebrationOverlay(
+          onDismiss: () {
+            if (_celebrationOverlayEntry == null) return;
+            entry.remove();
+            _celebrationOverlayEntry = null;
+          },
+        );
+      },
+    );
+
+    _celebrationOverlayEntry = entry;
+    overlay.insert(entry);
   }
 
   String _getGreeting() {
@@ -235,7 +270,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text(
-            'Habit Mastery League',
+            'Home',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           actions: [
@@ -256,7 +291,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Text(
                           _getGreeting(),
-                          style: Theme.of(context).textTheme.headlineSmall
+                          style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
@@ -305,7 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SliverAppBar(
               floating: true,
               title: const Text(
-                'Habit Mastery League',
+                'Home',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               actions: [
@@ -323,8 +358,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       _getGreeting(),
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       DateFormat('EEEE, MMMM d').format(DateTime.now()),
@@ -372,6 +408,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       floatingActionButton: _buildAddHabitFab(),
+    );
+  }
+}
+
+class _CelebrationOverlay extends StatefulWidget {
+  final VoidCallback onDismiss;
+
+  const _CelebrationOverlay({required this.onDismiss});
+
+  @override
+  State<_CelebrationOverlay> createState() => _CelebrationOverlayState();
+}
+
+class _CelebrationOverlayState extends State<_CelebrationOverlay> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _visible = true);
+    });
+
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (!mounted) return;
+      setState(() => _visible = false);
+    });
+
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (!mounted) return;
+      widget.onDismiss();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: _visible ? 1 : 0,
+        child: ColoredBox(
+          color: Colors.black.withValues(alpha: 0.62),
+          child: Center(
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutBack,
+              scale: _visible ? 1 : 0.85,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🎉🏆🔥', style: TextStyle(fontSize: 58)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'All Done Today!',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'You crushed it. Keep the streak alive!',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

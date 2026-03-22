@@ -351,12 +351,23 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildCompletionRatesChart(BuildContext context) {
-    final entries = _completionRates.entries.toList();
+    const categories = ['Health', 'Study', 'Fitness', 'Mindfulness', 'Other'];
+    final bucketedRates = <String, List<double>>{};
 
-    String truncateHabitName(String name) {
-      if (name.length <= 8) return name;
-      return '${name.substring(0, 8)}..';
+    for (final habit in _habits) {
+      final rate = _completionRates[habit.name];
+      if (rate == null) continue;
+      bucketedRates.putIfAbsent(habit.category, () => <double>[]).add(rate);
     }
+
+    final entries = categories
+        .where((category) => (bucketedRates[category]?.isNotEmpty ?? false))
+        .map((category) {
+          final rates = bucketedRates[category]!;
+          final averageRate = rates.reduce((a, b) => a + b) / rates.length;
+          return MapEntry(category, averageRate);
+        })
+        .toList();
 
     return Card(
       child: Padding(
@@ -365,7 +376,7 @@ class _StatsScreenState extends State<StatsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Habit Completion Rates',
+              'Completion Rate by Category',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -423,7 +434,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               child: SizedBox(
                                 width: 62,
                                 child: Text(
-                                  truncateHabitName(entries[index].key),
+                                  entries[index].key,
                                   style: Theme.of(
                                     context,
                                   ).textTheme.bodySmall?.copyWith(fontSize: 10),
@@ -445,7 +456,9 @@ class _StatsScreenState extends State<StatsScreen> {
                       barRods: [
                         BarChartRodData(
                           toY: rate,
-                          color: AppColors.primary,
+                          color:
+                              AppColors.categories[entry.value.key] ??
+                              AppColors.primary,
                           width: 14,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(8),
@@ -607,7 +620,10 @@ class _StatsScreenState extends State<StatsScreen> {
     if (_habits.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Stats'),
+          title: const Text(
+            'My Stats',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           actions: [
             IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
           ],
@@ -618,7 +634,10 @@ class _StatsScreenState extends State<StatsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Stats'),
+        title: const Text(
+          'My Stats',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
         ],
